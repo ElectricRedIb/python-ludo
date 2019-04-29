@@ -1,9 +1,10 @@
 # pyludo
 A python3 ludo simulator. Forked from haukuri.
+included AI, genetic algorithm
 ### install
 
 ```
-$ git clone https://github.com/RasmusHaugaard/pyludo.git
+$ git clone https://github.com/ElectricRedIb/pyludo.git
 ```
 ```
 $ cd pyludo
