@@ -1,6 +1,7 @@
 # pyludo
 A python3 ludo simulator. Forked from haukuri.
-included AI, genetic algorithm
+
+Included AI, genetic algorithm
 ### install
 
 ```
