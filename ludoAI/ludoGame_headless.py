@@ -1,24 +1,48 @@
 from pyludo import LudoGame, LudoPlayerRandom
 import random
 import time
-from LudoPlayerGenetic import LudoPlayerGenetic
+from genetic.LudoPlayerGenetic import LudoPlayerGenetic
 
-players = [LudoPlayerGenetic()] + [LudoPlayerRandom() for _ in range(3)]
-for i, player in enumerate(players):
-    player.id = i
 
-score = [0, 0, 0, 0]
+def tornament():
+    players = [LudoPlayerGenetic() for _ in range(3)]
+    for i, player in enumerate(players):
+        player.id = i
 
-n = 1
+    score = [0, 0, 0, 0]
 
-start_time = time.time()
-for i in range(n):
-    random.shuffle(players)
-    ludoGame = LudoGame(players)
-    winner = ludoGame.play_full_game()
-    score[players[winner].id] += 1
-    print('Game ', i, ' done')
-duration = time.time() - start_time
+    n = 1
 
-print('win distribution:', score)
-print('games per second:', n / duration)
+    start_time = time.time()
+    for i in range(n):
+        random.shuffle(players)
+        ludoGame = LudoGame(players)
+        winner = ludoGame.play_full_game()
+        score[players[winner].id] += 1
+        print('Game ', i, ' done')
+    duration = time.time() - start_time
+
+    print('win distribution:', score)
+    print('games per second:', n / duration)
+
+
+def normal_game(number_of_runs=1):
+    players = [LudoPlayerGenetic()] + [LudoPlayerRandom() for _ in range(3)]
+    for i, player in enumerate(players):
+        player.id = i
+
+    score = [0, 0, 0, 0]
+
+    n = number_of_runs
+
+    start_time = time.time()
+    for i in range(n):
+        random.shuffle(players)
+        ludoGame = LudoGame(players)
+        winner = ludoGame.play_full_game()
+        score[players[winner].id] += 1
+        print('Game ', i, ' done')
+    duration = time.time() - start_time
+
+    print('win distribution:', score)
+    print('games per second:', n / duration)

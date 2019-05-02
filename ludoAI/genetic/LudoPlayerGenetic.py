@@ -1,11 +1,25 @@
 # https://towardsdatascience.com/introduction-to-genetic-algorithms-including-example-code-e396e98d8bf3
-
-
+# https://www.youtube.com/watch?v=rGWBo0JGf50&t=7s
 import random
 import numpy as np
+from Population import Population
+from Agent import Agent
+from os import path
 
 
 class LudoPlayerGenetic:
+    script_dir = path.dirname(__file__)
+    file = '/pop_pool/simple_pop1.pool'
+    Population population
+
+    def __init__(self):
+        None
+
+    def load_pop(self):
+        pop = np.load(self.script_dir + self.file + '.npz')
+        self.population.pop = pop['ch']
+        self.population.generation =
+
     def play(self, state, dice_roll, next_states):
         """
         :param state:
@@ -18,23 +32,15 @@ class LudoPlayerGenetic:
         :return:
             index of the token that is wished to be moved. If it is invalid, the first valid token will be chosen.
         """
+        np.random.choice(self.pop)
 
-        return random.choice(np.argwhere(next_states != False))[0]
+        return np.random.choice(np.argwhere(next_states != False))[0]
 
-    def init_pop(self):
-        None
 
-    def fitness(self, pop):
-        None
+pop = Population()
+pop.init_pop()
+pop.save_pop()
 
-    def breed(self, pop):
-        None
-
-    def crossover(self, parent_a, parent_b):
-        None
-
-    def mutaion(self, child):
-        None
-
-    def execute(self, pop):
-        None
+player = LudoPlayerGenetic()
+player.load_pop()
+print(random.choice(pop.pop))
