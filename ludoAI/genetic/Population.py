@@ -1,61 +1,112 @@
+from pyludo import LudoGame, StandardLudoPlayers
 import numpy as np
 import random
-from Agent import Agent
 from tempfile import TemporaryFile
 from os import path
 
 
 class Population:
-    size_Of_Pop = 100
-    file = '/pop_pool/simple_pop'
-    script_dir = path.dirname(__file__)
-    generation = 1
+    #pop_size = 200
+    file = 'pop200_'  # '/pop_pool/4g_self_pop'
+    script_dir = path.dirname(__file__) + '/pop_pool/'
+    generation = 0
     amount_of_genes = 4
     mu = 0
-    sigma = 10
+    sigma = 1
 
-    def __init__(self):
-        None
+    def __init__(self, pop_size=200):
+        self.pop_size = pop_size
+        self.pop = [np.random.normal(self.mu, self.sigma, self.amount_of_genes) for _ in range(self.pop_size)]
+        self.fitness = np.zeros(self.pop_size, dtype=float) - 1.0
 
-    def init_pop(self):
-        self.pop = [np.random.normal(self.mu, self.sigma, self.amount_of_genes) for _ in range(self.size_Of_Pop)]
+    def load_pop(self, load_generation):
+        if load_generation > 0:
+            loaded_pop = np.load(self.script_dir + self.file + str(load_generation) + '.npy')
 
-    def fitness(self, fitness, index_of_chromosome):
-        None
+            self.generation = load_generation
+            # self.population.load_pop(loaded_pop['ch'])
+            # loaded_pop.pop()
+            # print(loaded_pop)
+            self.pop = loaded_pop
+            print('loaded population gen', self.generation)
 
-    def breed(self, sampled_pop, fitness):
-        p1 = np.random.choice(sampled_pop, replace=False, p=fitness)
-        p2 = np.random.choice(sampled_pop, replace=False, p=fitness)
-        [child_a, child_b] = self.crossover(parent_a=p1, parent_b=p2)
-        self.pop = self.execute(new_agents=[child_a, child_b], sampled_pop=sampled_pop, fitness=fitness)
+    def fitness_add(self, fitness_score, index_of_chromosomes):
+        self.fitness[index_of_chromosomes] = fitness_score
+
+    def get_fitless_agent_idx(self):
+        enum_fitness = list(enumerate(self.fitness))
+        sorted_fitness = sorted(enum_fitness, key=lambda x: x[1])
+        if sorted_fitness[0][1] != -1:
+            return -1
+        return sorted_fitness[0][0]
+
+    def breed(self, create_agents=2):
+        if create_agents % 2:
+            print('Create agents must be dividable by 2')
+            return 0
+
+        def get_fitness_p():
+            return self.fitness / sum(self.fitness)
+
+        def agents_to_breed(to_breed, fitness_p):
+            return np.random.choice(np.arange(len(self.pop)), size=to_breed, replace=False, p=fitness_p)
+        fitness_p = np.array(get_fitness_p())
+
+        breeders = agents_to_breed(to_breed=create_agents, fitness_p=fitness_p)
+        # parents_idx = breeders[np.argsort(fitness_p[breeders])]
+        parents_idx = np.split(breeders, int(create_agents / 2))
+        children = np.array([], dtype=int)
+        for parent in parents_idx:
+            children = np.append(self.crossover(parent_a=self.pop[parent[0]], parent_b=self.pop[parent[1]]), children)
+
+        children = np.split(children, create_agents)
+        self.execute(new_agents=children, fitness_p=fitness_p)
+
         self.generation = self.generation + 1
 
-    def crossover(self, parent_a, parent_b):
+    def crossover(self, parent_a, parent_b):  # may be choose another method
         mask = np.random.rand(self.amount_of_genes) < 0.5
-        child_a = parent_a * mask + parent_b * n.invert(mask)
-        child_b = parent_b * mask + parent_a * n.invert(mask)
+        child_a = parent_a * mask + parent_b * np.invert(mask)
+        child_b = parent_b * mask + parent_a * np.invert(mask)
         child_a = self.mutation(child_a)
         child_b = self.mutation(child_b)
         return [child_a, child_b]
+
+        '''
+        The mutation rate is set to low in GA because high
+        mutation rates convert GA to a primitive random search.
+        --2019_Book_EvolutionaryAlgorithmsAndNeura
+
+        page 47
+        '''
 
     def mutation(self, child, mutation_rate=0.1):
         mask = np.random.rand(self.amount_of_genes) < mutation_rate
         mutation = [i for i, x in enumerate(mask) if x]
         for i in mutation:
-            child[i] = np.random.normal(child[i], 1, self.amount_of_genes)[0]
+            child[i] = np.random.normal(child[i], self.sigma / 4, self.amount_of_genes)[0]
         return child
 
-    def execute(self, new_agents, sampled_pop, fitness):
-        execution = [1 - i for i in fitness]
-
-        execution[:] = [i / sum(execution) for i in execution]
-        relace_agent_idxs = np.random.choice(np.arange(len(sampled_pop)), len(new_agents), replace=False, p=execution)
-        for i in range(len(replace_agent_idxs)):
-            sampled_pop[replace_agent_idxs[i]] = new_agents[i]
-        return sampled_pop
+    def execute(self, new_agents, fitness_p):
+        #print('new agents', new_agents)
+        replace_agent_idxs = np.arange(self.pop_size)[np.argsort(fitness_p)]
+        for i in range(len(new_agents)):
+            self.pop[replace_agent_idxs[i]] = new_agents[i]
+            self.fitness[replace_agent_idxs[i]] = -1
 
     def save_pop(self):
-        np.savez(self.script_dir + self.file + str(self.generation) + '.pool', ch=self.pop)
+        pop_to_save = self.pop
+        np.save(self.script_dir + self.file + str(self.generation), pop_to_save)
 
-    def tournament(self, total_fighters, total_fights):
-        fighters = np.random.choice(self.pop, replace=False, 6)
+    def save_fitness(self):
+        fit_to_save = self.fitness
+        np.save(self.script_dir + 'fitness_' + str(self.generation), fit_to_save)
+
+    def get_random_agent(self, amount_of_agents=1):
+        return np.random.choice(np.arange(len(self.pop)), size=amount_of_agents, replace=False, p=None)
+
+
+'''
+list1 = list(enumerate(list1))
+list2 = sorted(list1, key=lambda x:x[1])
+'''
