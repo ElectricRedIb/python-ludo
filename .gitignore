@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 *.npz
 *.npy
+pop_pool*

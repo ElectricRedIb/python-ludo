@@ -3,19 +3,22 @@ import numpy as np
 import time
 from genetic.LudoPlayerGenetic import LudoPlayerGenetic
 from genetic.Population import Population
-population = Population()
 
 
-def tournament(generations=100):
+# ----------------------------------------------------------
+population = Population(200)
+# ----------------------------------------------------------
+
+
+def tournament(generations=100, fitness_games=200):
 
     def assign_fitness(amount_of_games=100):
-        #print('Assigning fitness to the population')
+        # print('Assigning fitness to the population')
         agent_idx = population.get_fitless_agent_idx()
         while agent_idx != -1:
             GA_agent = population.pop[agent_idx]
-            #print('Calculating fitness for agent: ', agent_idx)
-            # print(GA_agent)
-            players = [LudoPlayerGenetic(GA_agent)] + [StandardLudoPlayers.LudoPlayerFast() for _ in range(3)]
+
+            players = [LudoPlayerGenetic(GA_agent)] + [StandardLudoPlayers.LudoPlayerRandom() for _ in range(3)]
             for id, player in enumerate(players):
                 player.id = id
 
@@ -23,27 +26,32 @@ def tournament(generations=100):
             fitness = np.zeros(4, dtype=np.int)
             # print(agent_idx)
             for i in range(n):
-
                 np.random.shuffle(players)
                 ludoGame = LudoGame(players)
                 winner = ludoGame.play_full_game()
                 fitness[players[winner].id] += 1
+            # print('win distribution:', fitness / amount_of_games)
             population.fitness_add(fitness_score=fitness[0] / amount_of_games, index_of_chromosomes=agent_idx)
             agent_idx = population.get_fitless_agent_idx()
-
+    population.save_pop()
+    assign_fitness(amount_of_games=fitness_games)
     for i in range(generations):
-        # print(population.pop)
-        assign_fitness(amount_of_games=200)
-        population.breed(8)
+        print('Generation: ', i)
+        population.breed(4)
+        assign_fitness(amount_of_games=fitness_games)
         population.save_pop()
+        population.save_fitness()
+        population.reset_fitness()
+        '''
         if population.generation % 10 == 0:
             population.save_fitness()
             normal_game(number_of_runs=100)
+        '''
 
 
 def normal_game(number_of_runs=100):
 
-    GA_player = population.pop[population.get_random_agent(1)[0]]
+    GA_player = population.pop[population.get_best_agent()]  # population.pop[population.get_random_agent(1)[0]]
     players = [LudoPlayerGenetic(GA_player)] + [StandardLudoPlayers.LudoPlayerRandom() for _ in range(3)]
     for i, player in enumerate(players):
         player.id = i
@@ -55,9 +63,11 @@ def normal_game(number_of_runs=100):
 
     start_time = time.time()
     for i in range(n):
+        '''
         for idx in range(4):
             if players[idx].id == 0:
-                players[idx].load_agent(population.pop[population.get_random_agent(1)[0]])
+                players[idx].load_agent(population.pop[population.get_best_agent()])
+        '''
         np.random.shuffle(players)
         ludoGame = LudoGame(players)
         winner = ludoGame.play_full_game()
@@ -68,10 +78,14 @@ def normal_game(number_of_runs=100):
     print('games per second:', n / duration)
 
 
-tournament(generations=500)
-# normal_game(number_of_runs=2)
+# population.load_pop(500)
+#tournament(generations=1, fitness_games=100)
+# population.load_pop(15)
+# print(population.fitness[population.get_best_agent()])
+# normal_game(number_of_runs=100)
 
 '''
+population.load_pop(500)
 normal_game(number_of_runs=200)
 
 for i in range(100):
